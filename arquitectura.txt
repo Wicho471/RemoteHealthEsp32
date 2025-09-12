@@ -1,0 +1,34 @@
+project-root/
+├─ src/
+│  ├─ main.ino
+│  ├─ config/
+│  │  ├─ Constants.h <- Terminado
+│  │  ├─ PinConfig.h <- Terminado
+│  │  ├─ Keys.h <- Terminado
+│  ├─ core/
+│  │  ├─ AppController.h
+│  │  ├─ AppController.cpp
+│  ├─ managers/
+│  │  ├─ NetworkManager.{h,cpp} <- Terminado
+│  │  ├─ SensorManager.{h,cpp} <- Trabajando
+│  │  ├─ CommandManager.{h,cpp} <- Trabajando
+│  │  ├─ PreferencesManager.{h,cpp,tpp}  <- Terminado
+│  ├─ models/
+│  │  ├─ SensorData.h                
+│  │  ├─ Commands.h                  
+│  ├─ services/
+│  │  ├─ BluetoothService.{h,cpp}
+│  │  ├─ WebServerService.{h,cpp}   
+│  │  ├─ TimeService.{h,cpp}        
+│  ├─ tasks/
+│  │  ├─ FastTask.{h,cpp}
+│  │  ├─ SlowTask.{h,cpp}
+│  │  └─ WebSocketTask.{h,cpp}      
+│  ├─ utils/
+│  │  ├─ RingBuffer.h
+│  │  ├─ Helpers.h
+│  │  └─ Logger.{h,cpp}            
+│  └─ init/
+│     ├─ Initializer.{h,cpp}       
+└─ lib/
+    └─ (opcional)
