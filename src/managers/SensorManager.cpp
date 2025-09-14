@@ -1,9 +1,13 @@
 #include "SensorManager.h"
-#include "config/PinConfig.h"
+#include "src/config/PinConfig.h"
+
+volatile bool SensorManager::loPlusDisconnected = false;
+volatile bool SensorManager::loMinusDisconnected = false;
 
 SensorManager::SensorManager(PreferencesManager& prefs) 
     : prefs(prefs), mlxOK(false), maxOK(false), accelOK(false) {
     i2cMutex = xSemaphoreCreateMutex();
+    mlx = Adafruit_MLX90614();
 }
 
 void SensorManager::init() {
@@ -11,24 +15,48 @@ void SensorManager::init() {
     Wire1.begin(SDA_1_PIN, SCL_1_PIN, 400000);
 
     mlxOK = mlx.begin();
-
+    Logger::log(mlxOK ? "Encendiendo sensor MLX90614\n" : "Sensor MLX90614 no encontrado\n");
     maxOK = max3010x.begin(Wire1);
+    Logger::log(maxOK ? "Encendiendo sensor MAX3010x\n" : "Sensor MAX3010x no encontrado\n");
+
     if (maxOK) {
         int brightness = prefs.load<int>(KEY_OXI_BRIGHTNESS, 0x4F);
         max3010x.setup(     
-            (uint8_t)brightness, // powerLevel (31/255 ≈ 12.2 mA por LED; ajusta si satura)
-            4,                   // sampleAverage (4 lecturas promedio en HW)
-            2,                   // ledMode (2 = rojo + IR)
-            400,                 // <<<  400 Hz
-            411,                 // 411 µs → 18 bit
-            4096);
+            (uint8_t)brightness,
+            4,
+            2,
+            400,
+            411,
+            4096
+        );
         max3010x.enableFIFORollover();
     }
+    turnOffMax();
 
     accelOK = accel.begin();
+    Logger::log(accelOK ? "Encendiendo sensor MMA8452Q\n" : "Sensor MMA8452Q no encontrado\n");
 
     pinMode(LO_PLUS_PIN, INPUT);
     pinMode(LO_MINUS_PIN, INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(LO_PLUS_PIN), SensorManager::isrLoPlus, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(LO_MINUS_PIN), SensorManager::isrLoMinus, CHANGE);
+}
+
+void SensorManager::turnOnMax() {
+    if (!maxOK) {
+        Logger::log("Encendiendo sensor MAX3010x\n");
+        max3010x.wakeUp();
+        maxOK = true;
+    }
+}
+
+void SensorManager::turnOffMax() {
+    if (maxOK) {
+        Logger::log("Apagando sensor MAX3010x\n");
+        max3010x.shutDown();
+        maxOK = false;
+    }
 }
 
 bool SensorManager::isMLXReady() const { return mlxOK; }
@@ -36,7 +64,7 @@ bool SensorManager::isMAXReady() const { return maxOK; }
 bool SensorManager::isACCELReady() const { return accelOK; }
 
 bool SensorManager::isEcgConnected() const {
-    return !(digitalRead(LO_PLUS_PIN) || digitalRead(LO_MINUS_PIN));
+    return !(loPlusDisconnected || loMinusDisconnected);
 }
 
 float SensorManager::readTemperature() {
@@ -97,6 +125,14 @@ float SensorManager::getAbsMoving() {
     float ay = accel.getCalculatedY();
     float az = accel.getCalculatedZ();
     return ax * ax + ay * ay + az * az;
+}
+
+void IRAM_ATTR SensorManager::isrLoPlus() {
+    loPlusDisconnected = digitalRead(LO_PLUS_PIN);
+}
+
+void IRAM_ATTR SensorManager::isrLoMinus() {
+    loMinusDisconnected = digitalRead(LO_MINUS_PIN);
 }
 
 SemaphoreHandle_t SensorManager::getI2CMutex() {

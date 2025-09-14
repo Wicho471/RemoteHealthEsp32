@@ -4,7 +4,8 @@
 #include <Arduino.h>
 #include "NetworkManager.h"
 #include "SensorManager.h"
-#include "config/Keys.h"
+#include "src/utils/Logger.h"
+#include "src/config/Keys.h"
 
 class CommandManager {
 public:

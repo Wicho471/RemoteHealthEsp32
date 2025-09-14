@@ -8,7 +8,9 @@
 #include <Wire.h>
 
 #include "PreferencesManager.h"
-#include "config/Keys.h"
+#include "src/config/Keys.h"
+#include "src/utils/Logger.h"
+
 
 class SensorManager {
 public:
@@ -21,6 +23,9 @@ public:
     bool isACCELReady() const;
     bool isEcgConnected() const;
 
+    void turnOnMax();
+    void turnOffMax();
+
     float readTemperature();
     float readMovement();
     long readIR();
@@ -29,7 +34,7 @@ public:
 
     void setMAX3010xBrightness(uint8_t brightness);
 
-    SemaphoreHandle_t getI2CMutex(); // para tareas que necesiten sincronización
+    SemaphoreHandle_t getI2CMutex();
 
 private:
     PreferencesManager& prefs;
@@ -44,7 +49,13 @@ private:
     bool maxOK;
     bool accelOK;
 
-    float getAbsMoving(); // cálculo acelerómetro
+    static volatile bool loPlusDisconnected;
+    static volatile bool loMinusDisconnected;
+
+    static void IRAM_ATTR isrLoPlus();
+    static void IRAM_ATTR isrLoMinus();
+
+    float getAbsMoving(); 
 };
 
 #endif

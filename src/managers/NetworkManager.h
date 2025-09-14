@@ -4,17 +4,24 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "PreferencesManager.h"
-#include "../config/Keys.h"
+#include "src/config/Keys.h"
+#include "src/utils/Logger.h"
+#include "src/services/TimeService.h"
 
 class WifiManager {
 public:
-    explicit WifiManager(PreferencesManager* prefsManager);
+    explicit WifiManager(PreferencesManager* prefsManager, TimeService* timeService);
 
     void begin();
     void restartConnection();
     void reloadConfig();
     void updateSTAConfig(const String& newSsid, const String& newPassword);
     void updateAPConfig(const String& newSsid, const String& newPassword);
+    void disconectWiFi();
+
+    bool addCredential(const String& ssid, const String& password);
+    bool removeCredential(const String& ssid);
+    bool clearVault();
 
     bool isInternetAvailable() const;
     bool isConnectedToWifi() const;
@@ -24,9 +31,12 @@ public:
     String getPASS_STA() const;
     String getSSID_AP() const;
     String getPASS_AP() const;
+    IPAddress getSoftAPIP() const;
 
 private:
     PreferencesManager* prefs;
+    TimeService* timeService;
+    
     String ssid_sta;
     String password_sta;
     String ssid_ap;
@@ -36,8 +46,6 @@ private:
 
     bool connectWiFi();
     bool checkInternet();
-    bool setupTime();
-    void loadLastTimeSaved();
 };
 
 #endif // WIFI_MANAGER_H

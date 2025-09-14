@@ -65,13 +65,13 @@ String CommandManager::showPreferences() {
     String ssidAp = wifi->getSSID_AP();
     String passAp = wifi->getPASS_AP();
     String oxiBrightness = prefs.load<String>(KEY_OXI_BRIGHTNESS, "0");
-    uint64_t timestamp = prefs.load<uint64_t>(KEY_TIME, 0);
 
     snprintf(buffer, sizeof(buffer), 
-        "{\"ssidSta\":\"%s\",\"passwordSta\":\"%s\",\"ssidAp\":\"%s\",\"passwordAp\":\"%s\",\"apEnabled\":%s,\"oximeterBrightness\":%s,\"timestamp\":%llu}",
+        "{\"ssidSta\":\"%s\",\"passwordSta\":\"%s\",\"ssidAp\":\"%s\",\"passwordAp\":\"%s\",\"apEnabled\":%s,\"oximeterBrightness\":%s}",
         ssidSta.c_str(), passSta.c_str(),
         ssidAp.c_str(), passAp.c_str(),
-        timestamp);
+        wifi->getSoftAPIP() != IPAddress(0, 0, 0, 0) ? "true" : "false",
+        oxiBrightness.c_str());
     return String(buffer);
 }
 

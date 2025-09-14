@@ -3,37 +3,33 @@
 #include "time.h"
 
 constexpr const char* URL_CONNECTIVITY_CHECK = "http://clients3.google.com/generate_204";
-const char* ntpServer1 = "pool.ntp.org";
-const char* ntpServer2 = "time.nist.gov";
-const char* ntpServer3 = "time.google.com";
-const long gmtOffset_sec = -6 * 3600;
-const int daylightOffset_sec = 0;
 
-WifiManager::WifiManager(PreferencesManager* prefsManager)
-    : prefs(prefsManager), internet(false), staConnection(false) {}
+WifiManager::WifiManager(PreferencesManager* prefsManager, TimeService* timeService)
+    : prefs(prefsManager), timeService(timeService) , internet(false), staConnection(false) {}
 
 void WifiManager::begin() {
+    Logger::log("Inciando WifiManager\n");
     reloadConfig();
-    WiFi.enableIPv6();
+    Logger::log(WiFi.enableIPv6() ? "IPv6 habilitado correctamente\n" : "No se pudo habilitar IPv6\n");
     WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(ssid_ap.c_str(), password_ap.c_str());
     restartConnection();
 }
 
 void WifiManager::reloadConfig() {
-    ssid_sta = prefs->load<String>(KEY_SSID_STA, "default_sta");
-    password_sta = prefs->load<String>(KEY_PASSWORD_STA, "default_pass");
+    ssid_sta = prefs->load<String>(KEY_SSID_STA, "Totalplay-2.4G-3290");
+    password_sta = prefs->load<String>(KEY_PASSWORD_STA, "nc8anF2tNfPNGUqQ");
     ssid_ap = prefs->load<String>(KEY_SSID_AP, "ESP32_AP");
     password_ap = prefs->load<String>(KEY_PASSWORD_AP, "12345678");
 }
 
 bool WifiManager::connectWiFi() {
-    WiFi.disconnect(true);
-    delay(1000);
-    WiFi.begin(ssid_sta.c_str(), password_sta.c_str());
-
+    Logger::log("Iniciando conexion a WiFi con SSID: %s y password: %s\n", ssid_sta.c_str(), password_sta.c_str());
     unsigned long t0 = millis();
+    WiFi.begin(ssid_sta.c_str(), password_sta.c_str());
+    Logger::log("Conectando a WiFi");
     while (WiFi.status() != WL_CONNECTED && millis() - t0 < 15000) {
+        Logger::log(".");
         delay(500);
     }
 
@@ -48,51 +44,38 @@ bool WifiManager::checkInternet() {
     return (httpCode == 204);
 }
 
-bool WifiManager::setupTime() {
-    configTime(gmtOffset_sec, daylightOffset_sec, ntpServer1, ntpServer2, ntpServer3);
-    struct tm timeinfo;
-
-    for (int i = 0; i < 10; i++) {
-        if (getLocalTime(&timeinfo)) {
-            time_t now;
-            time(&now);
-            prefs->save(KEY_TIME, static_cast<uint64_t>(now));
-            return true;
-        }
-        delay(1000);
-    }
-
-    loadLastTimeSaved();
-    return false;
-}
-
-void WifiManager::loadLastTimeSaved() {
-    uint64_t saved = prefs->load<uint64_t>(KEY_TIME, 0);
-    if (saved > 0) {
-        struct timeval tv = { .tv_sec = static_cast<time_t>(saved), .tv_usec = 0 };
-        settimeofday(&tv, nullptr);
-    }
-}
-
-void WifiManager::restartConnection() {
+void WifiManager::restartConnection() {    
     if (!connectWiFi()) {
+        Logger::log("No se pudo conectar a WiFi \n");
         internet = false;
         staConnection = false;
         return;
     }
-
+    Logger::log("\nConexion establecida a WiFi\n");
+    Logger::log("Ipv4: %s\n", getIPv4().c_str());
+    
+    Logger::log(WiFi.enableIPv6() ? "IPv6 habilitado correctamente\n" : "No se pudo habilitar IPv6\n");
+    Logger::log("Conectando a IPv6");
+    unsigned long tIPv6 = millis();
+    while (getIPv6() == "::" && millis() - tIPv6 < 15000) {
+        Logger::log(".");
+        delay(1000);
+    }
+    Logger::log("\nIpv6: %s\n", getIPv6().c_str());
+    
     staConnection = true;
 
     if (!checkInternet()) {
+        Logger::log("No hay conexion a internet\n");
         internet = false;
         return;
     }
+    Logger::log("Conexion a internet establecida\n");
 
-    if (!setupTime()) {
+    if (!timeService->setupTime()) {
         internet = false;
         return;
     }
-
     internet = true;
 }
 
@@ -100,6 +83,7 @@ void WifiManager::updateSTAConfig(const String& newSsid, const String& newPasswo
     prefs->save(KEY_SSID_STA, newSsid);
     prefs->save(KEY_PASSWORD_STA, newPassword);
     reloadConfig();
+    disconectWiFi();
     restartConnection();
 }
 
@@ -110,6 +94,15 @@ void WifiManager::updateAPConfig(const String& newSsid, const String& newPasswor
     WiFi.softAPdisconnect(true);
     delay(500);
     WiFi.softAP(ssid_ap.c_str(), password_ap.c_str());
+}
+
+void WifiManager::disconectWiFi() {
+    if (!(WiFi.status() == WL_CONNECTED)) return;
+    WiFi.disconnect();
+    delay(500);
+    staConnection = false;
+    internet = false;
+    Logger::log("Desconectado del WiFi\n");
 }
 
 bool WifiManager::isInternetAvailable() const {
@@ -142,4 +135,8 @@ String WifiManager::getSSID_AP() const {
 
 String WifiManager::getPASS_AP() const {
     return password_ap;
+}
+
+IPAddress WifiManager::getSoftAPIP() const {
+    return WiFi.softAPIP();
 }
