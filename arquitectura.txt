@@ -1,6 +1,6 @@
 project-root/
+├─ main.ino
 ├─ src/
-│  ├─ main.ino
 │  ├─ config/
 │  │  ├─ Constants.h <- Terminado
 │  │  ├─ PinConfig.h <- Terminado
@@ -9,17 +9,18 @@ project-root/
 │  │  ├─ AppController.h
 │  │  ├─ AppController.cpp
 │  ├─ managers/
-│  │  ├─ SerialManager.{h,cpp} <- Trabajando
+│  │  ├─ SerialManager.{h,cpp} <- Terminado
 │  │  ├─ NetworkManager.{h,cpp} <- Terminado
 │  │  ├─ SensorManager.{h,cpp} <- Terminado
 │  │  ├─ CommandManager.{h,cpp} <- Terminado
 │  │  ├─ PreferencesManager.{h,cpp,tpp}  <- Terminado
 │  ├─ models/
+│  │  ├─ PulseValues.h
 │  │  ├─ SensorData.h                
 │  │  ├─ Commands.h                  
 │  ├─ services/
 │  │  ├─ BluetoothService.{h,cpp} <- Terminado ("Descartado")
-│  │  ├─ WebServerService.{h,cpp}
+│  │  ├─ WebServerService.{h,cpp} <- Terminado
 │  │  ├─ WebSocketService.{h,cpp} <- Trabajando
 │  │  ├─ TimeService.{h,cpp} <- Terminado        
 │  ├─ tasks/
@@ -29,7 +30,8 @@ project-root/
 │  ├─ utils/
 │  │  ├─ RingBuffer.h
 │  │  ├─ Helpers.h
-│  │  └─ Logger.{h,cpp}            
+│  │  └─ Logger.{h,cpp} <- Terminado
+│  ├─ views/    
 │  └─ init/
 │     ├─ Initializer.{h,cpp}       
 └─ lib/

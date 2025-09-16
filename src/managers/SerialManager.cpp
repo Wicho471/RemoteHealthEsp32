@@ -7,7 +7,7 @@ void SerialManager::begin(unsigned long baudRate) {
     delay(1000);
 }
 
-void SerialManager::handleSerial() {
+void SerialManager::keepAlive() {
     while (Serial.available() > 0) {
         char c = (char)Serial.read();
         Serial.print(c);

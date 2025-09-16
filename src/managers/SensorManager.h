@@ -9,7 +9,9 @@
 
 #include "PreferencesManager.h"
 #include "src/config/Keys.h"
+#include "src/config/PinConfig.h"
 #include "src/utils/Logger.h"
+#include "src/models/PulseValues.h"
 
 
 class SensorManager {
@@ -18,32 +20,26 @@ public:
 
     void init();
     
-    bool isMLXReady() const;
-    bool isMAXReady() const;
-    bool isACCELReady() const;
+    bool isMLXEnabled() const;
+    bool isMAXEnabled() const;
+    bool isACCELEnabled() const;
     bool isEcgConnected() const;
-
+    
     void turnOnMax();
     void turnOffMax();
 
     float readTemperature();
     float readMovement();
-    long readIR();
-    long readRED();
+    PulseValues readIRandRED();
     int readECG();
 
-    void setMAX3010xBrightness(uint8_t brightness);
-
-    SemaphoreHandle_t getI2CMutex();
-
+    void setMAX3010xBrightness(int brightness);
 private:
     PreferencesManager& prefs;
 
     Adafruit_MLX90614 mlx;
     MAX30105 max3010x;
     MMA8452Q accel;
-
-    SemaphoreHandle_t i2cMutex;
 
     bool mlxOK;
     bool maxOK;

@@ -6,6 +6,8 @@
 #include "SensorManager.h"
 #include "src/utils/Logger.h"
 #include "src/config/Keys.h"
+#include <FS.h>
+#include <LittleFS.h>
 
 class CommandManager {
 public:
@@ -29,6 +31,10 @@ private:
     String setSTACredentials(const String& newSsid, const String& newPassword);
     String setAPCredentials(const String& newSsid, const String& newPassword);
     String restartSystem();
+    String resetStorageFS();
+    String resetPreferences();
+    String checkSizeFS();
+    String ping();
 
     // Sensor-specific configuration
     String setBrightness(int value);

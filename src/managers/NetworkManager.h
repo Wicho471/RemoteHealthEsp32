@@ -33,6 +33,9 @@ public:
     String getPASS_AP() const;
     IPAddress getSoftAPIP() const;
 
+    int getWifiOptions();
+    String getWifiSSID(int index);
+
 private:
     PreferencesManager* prefs;
     TimeService* timeService;

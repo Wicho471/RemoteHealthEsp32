@@ -24,7 +24,7 @@ bool TimeService::setupTime() {
             Logger::log("\nHora establecida correctamente -> %s\n", getFormattedTime(timeinfo).c_str());
             return true;
         }
-        delay(500);
+        delay(100);
     }
     Logger::log("No se pudo establecer la hora.");
     loadLastTimeSaved();

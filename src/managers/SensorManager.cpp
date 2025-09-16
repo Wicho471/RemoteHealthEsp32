@@ -1,12 +1,10 @@
 #include "SensorManager.h"
-#include "src/config/PinConfig.h"
 
 volatile bool SensorManager::loPlusDisconnected = false;
 volatile bool SensorManager::loMinusDisconnected = false;
 
 SensorManager::SensorManager(PreferencesManager& prefs) 
     : prefs(prefs), mlxOK(false), maxOK(false), accelOK(false) {
-    i2cMutex = xSemaphoreCreateMutex();
     mlx = Adafruit_MLX90614();
 }
 
@@ -16,6 +14,7 @@ void SensorManager::init() {
 
     mlxOK = mlx.begin();
     Logger::log(mlxOK ? "Encendiendo sensor MLX90614\n" : "Sensor MLX90614 no encontrado\n");
+
     maxOK = max3010x.begin(Wire1);
     Logger::log(maxOK ? "Encendiendo sensor MAX3010x\n" : "Sensor MAX3010x no encontrado\n");
 
@@ -59,9 +58,9 @@ void SensorManager::turnOffMax() {
     }
 }
 
-bool SensorManager::isMLXReady() const { return mlxOK; }
-bool SensorManager::isMAXReady() const { return maxOK; }
-bool SensorManager::isACCELReady() const { return accelOK; }
+bool SensorManager::isMLXEnabled() const { return mlxOK; }
+bool SensorManager::isMAXEnabled() const { return maxOK; }
+bool SensorManager::isACCELEnabled() const { return accelOK; }
 
 bool SensorManager::isEcgConnected() const {
     return !(loPlusDisconnected || loMinusDisconnected);
@@ -69,52 +68,37 @@ bool SensorManager::isEcgConnected() const {
 
 float SensorManager::readTemperature() {
     if (!mlxOK) return NAN;
-    if (xSemaphoreTake(i2cMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        float temp = mlx.readObjectTempC();
-        xSemaphoreGive(i2cMutex);
-        return temp;
-    }
-    return NAN;
+    return mlx.readObjectTempC();
 }
 
 float SensorManager::readMovement() {
     if (!accelOK) return NAN;
-    if (xSemaphoreTake(i2cMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        float value = getAbsMoving();
-        xSemaphoreGive(i2cMutex);
-        return value;
-    }
-    return NAN;
+    return getAbsMoving();
 }
 
-long SensorManager::readIR() {
-    if (!maxOK) return -1;
-    if (xSemaphoreTake(i2cMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        long value = max3010x.check() ? max3010x.getFIFOIR() : -1;
-        xSemaphoreGive(i2cMutex);
-        return value;
+PulseValues SensorManager::readIRandRED() {
+    PulseValues values = INVALID_PULSE_VALUES;
+    if (!maxOK) return values;
+    if (max3010x.check()) {
+        values.ir = max3010x.getFIFOIR();
+        values.red = max3010x.getFIFORed();
     }
-    return -1;
-}
-
-long SensorManager::readRED() {
-    if (!maxOK) return -1;
-    if (xSemaphoreTake(i2cMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
-        long value = max3010x.check() ? max3010x.getFIFORed() : -1;
-        xSemaphoreGive(i2cMutex);
-        return value;
-    }
-    return -1;
+    return values;
 }
 
 int SensorManager::readECG() {
     return isEcgConnected() ? analogRead(AD8232_PIN) : 0;
 }
 
-void SensorManager::setMAX3010xBrightness(uint8_t brightness) {
-    if (!maxOK) return;
+void SensorManager::setMAX3010xBrightness(int brightness) {
+    Logger::log("Guardado brillo ->");
     brightness = constrain(brightness, 0, 255);
-    prefs.save(KEY_OXI_BRIGHTNESS, brightness);
+    if( prefs.save(KEY_OXI_BRIGHTNESS, brightness)){
+        Logger::log("OK\n");
+    } else {
+        Logger::log("ERROR\n");
+    }
+    if (!maxOK) return;
     max3010x.setPulseAmplitudeRed(brightness);
     max3010x.setPulseAmplitudeIR(brightness);
 }
@@ -133,8 +117,4 @@ void IRAM_ATTR SensorManager::isrLoPlus() {
 
 void IRAM_ATTR SensorManager::isrLoMinus() {
     loMinusDisconnected = digitalRead(LO_MINUS_PIN);
-}
-
-SemaphoreHandle_t SensorManager::getI2CMutex() {
-    return i2cMutex;
 }

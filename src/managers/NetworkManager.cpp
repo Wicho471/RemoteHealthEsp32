@@ -46,7 +46,7 @@ bool WifiManager::checkInternet() {
 
 void WifiManager::restartConnection() {    
     if (!connectWiFi()) {
-        Logger::log("No se pudo conectar a WiFi \n");
+        Logger::log("\nNo se pudo conectar a WiFi \n");
         internet = false;
         staConnection = false;
         return;
@@ -80,6 +80,7 @@ void WifiManager::restartConnection() {
 }
 
 void WifiManager::updateSTAConfig(const String& newSsid, const String& newPassword) {
+    Serial.println("Actualizando configuracion de WiFi STA");
     prefs->save(KEY_SSID_STA, newSsid);
     prefs->save(KEY_PASSWORD_STA, newPassword);
     reloadConfig();
@@ -88,6 +89,7 @@ void WifiManager::updateSTAConfig(const String& newSsid, const String& newPasswo
 }
 
 void WifiManager::updateAPConfig(const String& newSsid, const String& newPassword) {
+    Serial.println("Actualizando configuracion de WiFi AP");
     prefs->save(KEY_SSID_AP, newSsid);
     prefs->save(KEY_PASSWORD_AP, newPassword);
     reloadConfig();
@@ -103,6 +105,14 @@ void WifiManager::disconectWiFi() {
     staConnection = false;
     internet = false;
     Logger::log("Desconectado del WiFi\n");
+}
+
+int WifiManager::getWifiOptions() {
+    return WiFi.scanNetworks();
+}
+
+String WifiManager::getWifiSSID(int index) {
+    return WiFi.SSID(index);
 }
 
 bool WifiManager::isInternetAvailable() const {

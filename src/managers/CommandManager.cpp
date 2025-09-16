@@ -33,15 +33,56 @@ String CommandManager::processCommand(const String& input) {
     else if (cmd == "ShowSensorStatus") return showSensorStatus();
     else if (cmd == "ShowPreferences") return showPreferences();
     else if (cmd == "RestartSystem") return restartSystem();
+    else if (cmd == "ResetPreferences") return resetPreferences();
+    else if (cmd == "ResetStorageFS") return resetStorageFS();
+    else if (cmd == "CheckSizeFS") return checkSizeFS();
     else if (cmd == "SetAPCredentials" && count == 3) return setAPCredentials(tokens[1], tokens[2]);
     else if (cmd == "SetSTACredentials" && count == 3) return setSTACredentials(tokens[1], tokens[2]);
     else if (cmd == "SetBrightness" && count == 2) return setBrightness(tokens[1].toInt());
+    else if (cmd == "ping") return ping();
+    Logger::log("Comando desconocido: %s\n", input.c_str());
     return FAILURE_MESSAGE;
 }
 
+String CommandManager::ping() {
+    Logger::log("Ping recibido\n");
+    snprintf(buffer, sizeof(buffer), "{\"type\":\"PING\"}");
+    return String(buffer);
+}
+
+String CommandManager::resetStorageFS() {
+    if (!LittleFS.begin()) {
+        Logger::log("Error al montar LittleFS\n");
+        return FAILURE_MESSAGE;
+    } else {
+        Logger::log("LittleFS montado correctamente\n");
+        LittleFS.format();
+        delay(10);
+        return SUCCESS_MESSAGE;
+    }
+}
+String CommandManager::checkSizeFS() {
+    if (!LittleFS.begin()) {
+        Logger::log("Error al montar LittleFS\n");
+        return FAILURE_MESSAGE;
+    } else {
+        Logger::log("LittleFS montado correctamente\n");
+        uint32_t totalBytes = LittleFS.totalBytes();
+        uint32_t usedBytes = LittleFS.usedBytes();
+        snprintf(buffer, sizeof(buffer), "{\"total\":%u,\"used\":%u}", totalBytes, usedBytes);
+        return String(buffer);
+    }
+}
+
+String CommandManager::resetPreferences() {
+    prefs.clearAll();
+    return SUCCESS_MESSAGE;
+}
+
+
 String CommandManager::showNetworkStatus() {
     snprintf(buffer, sizeof(buffer),
-        "{\"STA\":%s,\"internet\":%s,\"ipv4\":\"%s\",\"ipv6\":\"%s\"}",
+        "{\"type\":\"NETWORK_STATUS\",\"STA\":%s,\"internet\":%s,\"ipv4\":\"%s\",\"ipv6\":\"%s\"}",
         wifi->isConnectedToWifi() ? "true" : "false",
         wifi->isInternetAvailable() ? "true" : "false",
         wifi->getIPv4().c_str(),
@@ -51,10 +92,10 @@ String CommandManager::showNetworkStatus() {
 
 String CommandManager::showSensorStatus() {
     snprintf(buffer, sizeof(buffer), 
-         "{\"infrarred\":%s,\"oximeter\":%s,\"accelerometer\":%s,\"ecg\":%s}",
-        sensors->isMLXReady() ? "true" : "false",
-        sensors->isMAXReady() ? "true" : "false",
-        sensors->isACCELReady() ? "true" : "false",
+         "{\"type\":\"SENSORS_STATUS\",\"infrarred\":%s,\"oximeter\":%s,\"accelerometer\":%s,\"ecg\":%s}",
+        sensors->isMLXEnabled() ? "true" : "false",
+        sensors->isMAXEnabled() ? "true" : "false",
+        sensors->isACCELEnabled() ? "true" : "false",
         sensors->isEcgConnected() ? "true" : "false");
     return String(buffer);
 }
@@ -64,19 +105,20 @@ String CommandManager::showPreferences() {
     String passSta = wifi->getPASS_STA();
     String ssidAp = wifi->getSSID_AP();
     String passAp = wifi->getPASS_AP();
-    String oxiBrightness = prefs.load<String>(KEY_OXI_BRIGHTNESS, "0");
+    int oxiBrightness = prefs.load<int>(KEY_OXI_BRIGHTNESS, 0);
 
     snprintf(buffer, sizeof(buffer), 
-        "{\"ssidSta\":\"%s\",\"passwordSta\":\"%s\",\"ssidAp\":\"%s\",\"passwordAp\":\"%s\",\"apEnabled\":%s,\"oximeterBrightness\":%s}",
+        "{\"type\":\"PREFERENCES_STATUS\",\"ssidSta\":\"%s\",\"passwordSta\":\"%s\",\"ssidAp\":\"%s\",\"passwordAp\":\"%s\",\"apEnabled\":%s,\"oximeterBrightness\":%d}",
         ssidSta.c_str(), passSta.c_str(),
         ssidAp.c_str(), passAp.c_str(),
         wifi->getSoftAPIP() != IPAddress(0, 0, 0, 0) ? "true" : "false",
-        oxiBrightness.c_str());
+        oxiBrightness);
     return String(buffer);
 }
 
 String CommandManager::setSTACredentials(const String& newSsid, const String& newPassword) {
     wifi->updateSTAConfig(newSsid, newPassword);
+    delay(100);
     return showNetworkStatus();
 }
 
@@ -91,11 +133,6 @@ String CommandManager::restartSystem() {
 }
 
 String CommandManager::setBrightness(int value) {
-    bool maxOK = sensors->isMAXReady();
-    if (!maxOK) {
-        return FAILURE_MESSAGE;
-    }
-
     value = constrain(value, 0, 255);
     sensors->setMAX3010xBrightness(value);
     return SUCCESS_MESSAGE;

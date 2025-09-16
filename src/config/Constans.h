@@ -3,7 +3,6 @@
 
 // General definitions
 constexpr int MAX_TOKENS = 3;
-constexpr int BUFFER_SIZE = 512;
 constexpr int HTTP_PORT = 80;
 constexpr int WS_PORT = 8080;
 
@@ -11,10 +10,12 @@ constexpr int WS_PORT = 8080;
 constexpr float BAD_FLOAT = NAN;
 constexpr long BAD_LONG = -1;
 
+// Paquetes
+constexpr int BUFFER_SIZE = 256; //Tamaño del buffer por mensaje
+
 // WebSocket
-constexpr int QUEUE_SIZE = 10;
-constexpr int PAYLOAD_MAX_SIZE = 512;
-constexpr int DEFAULT_SAMPLE_RATE_HZ = 1000;
+constexpr int QUEUE_SIZE = 128; //Tamaño de la cola 
+constexpr int PAYLOAD_MAX_SIZE = BUFFER_SIZE; //Tamaño maximo por mensaje de la cola
 
 // String constants
 constexpr const char* ERR = "ERR";
