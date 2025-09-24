@@ -11,4 +11,7 @@ constexpr const char* KEY_PASSWORD_AP = "password-ap";
 constexpr const char* KEY_OXI_BRIGHTNESS = "oxi-brightness";
 constexpr const char* KEY_TIME = "timestamp";
 
+constexpr const char* KEY_TEST = "test";
+
+
 #endif // CONFIG_KEYS_H

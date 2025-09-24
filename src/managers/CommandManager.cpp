@@ -39,9 +39,21 @@ String CommandManager::processCommand(const String& input) {
     else if (cmd == "SetAPCredentials" && count == 3) return setAPCredentials(tokens[1], tokens[2]);
     else if (cmd == "SetSTACredentials" && count == 3) return setSTACredentials(tokens[1], tokens[2]);
     else if (cmd == "SetBrightness" && count == 2) return setBrightness(tokens[1].toInt());
+    else if (cmd == "SetTest" && count == 2) {
+        String val = tokens[1];
+        val.toLowerCase(); 
+        bool isTestEnabled = (val == "true" || val == "1");
+        return setTest(isTestEnabled);
+    }
     else if (cmd == "ping") return ping();
     Logger::log("Comando desconocido: %s\n", input.c_str());
     return FAILURE_MESSAGE;
+}
+
+String CommandManager::setTest(bool newVal) {
+    prefs.save(KEY_TEST, newVal);
+    restartSystem();
+    return SUCCESS_MESSAGE;
 }
 
 String CommandManager::ping() {

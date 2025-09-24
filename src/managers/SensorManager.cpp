@@ -3,8 +3,9 @@
 volatile bool SensorManager::loPlusDisconnected = false;
 volatile bool SensorManager::loMinusDisconnected = false;
 
+// <-- CAMBIO: Se inicializa el objeto ADXL345 con un ID de sensor único
 SensorManager::SensorManager(PreferencesManager& prefs) 
-    : prefs(prefs), mlxOK(false), maxOK(false), accelOK(false) {
+    : prefs(prefs), accel(12345), mlxOK(false), maxOK(false), accelOK(false) {
     mlx = Adafruit_MLX90614();
 }
 
@@ -32,8 +33,12 @@ void SensorManager::init() {
     }
     turnOffMax();
 
+    // <-- CAMBIO: Proceso de inicialización para el ADXL345
     accelOK = accel.begin();
-    Logger::log(accelOK ? "Encendiendo sensor MMA8452Q\n" : "Sensor MMA8452Q no encontrado\n");
+    if (accelOK) {
+        accel.setRange(ADXL345_RANGE_2_G); // Se establece el rango a +/- 2G
+    }
+    Logger::log(accelOK ? "Encendiendo sensor ADXL345\n" : "Sensor ADXL345 no encontrado\n");
 
     pinMode(LO_PLUS_PIN, INPUT);
     pinMode(LO_MINUS_PIN, INPUT);
@@ -103,11 +108,16 @@ void SensorManager::setMAX3010xBrightness(int brightness) {
     max3010x.setPulseAmplitudeIR(brightness);
 }
 
+// <-- CAMBIO: Lectura de datos usando el modelo de "eventos" de Adafruit
 float SensorManager::getAbsMoving() {
-    accel.read();
-    float ax = accel.getCalculatedX();
-    float ay = accel.getCalculatedY();
-    float az = accel.getCalculatedZ();
+    sensors_event_t event; 
+    accel.getEvent(&event);
+    
+    float ax = event.acceleration.x;
+    float ay = event.acceleration.y;
+    float az = event.acceleration.z;
+    
+    // Calcula el cuadrado de la magnitud del vector de aceleración
     return ax * ax + ay * ay + az * az;
 }
 

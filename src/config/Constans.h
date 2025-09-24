@@ -14,7 +14,7 @@ constexpr long BAD_LONG = -1;
 constexpr int BUFFER_SIZE = 256; //Tamaño del buffer por mensaje
 
 // WebSocket
-constexpr int QUEUE_SIZE = 128; //Tamaño de la cola 
+constexpr int QUEUE_SIZE = 256; //Tamaño de la cola 
 constexpr int PAYLOAD_MAX_SIZE = BUFFER_SIZE; //Tamaño maximo por mensaje de la cola
 
 // String constants

@@ -30,6 +30,7 @@ private:
     String showPreferences();
     String setSTACredentials(const String& newSsid, const String& newPassword);
     String setAPCredentials(const String& newSsid, const String& newPassword);
+    String setTest(bool newVal);
     String restartSystem();
     String resetStorageFS();
     String resetPreferences();

@@ -6,8 +6,8 @@ project-root/
 │  │  ├─ PinConfig.h <- Terminado
 │  │  ├─ Keys.h <- Terminado
 │  ├─ core/
-│  │  ├─ AppController.h
-│  │  ├─ AppController.cpp
+│  │  ├─ AppController.h <- Descartado 
+│  │  ├─ AppController.cpp <- Descartado
 │  ├─ managers/
 │  │  ├─ SerialManager.{h,cpp} <- Terminado
 │  │  ├─ NetworkManager.{h,cpp} <- Terminado
@@ -15,9 +15,9 @@ project-root/
 │  │  ├─ CommandManager.{h,cpp} <- Terminado
 │  │  ├─ PreferencesManager.{h,cpp,tpp}  <- Terminado
 │  ├─ models/
-│  │  ├─ PulseValues.h
-│  │  ├─ SensorData.h                
-│  │  ├─ Commands.h                  
+│  │  ├─ PulseValues.h <- Terminado
+│  │  ├─ SensorData.h <- Terminado               
+│  │  ├─ Commands.h <- Descartado   
 │  ├─ services/
 │  │  ├─ BluetoothService.{h,cpp} <- Terminado ("Descartado")
 │  │  ├─ WebServerService.{h,cpp} <- Terminado
@@ -28,11 +28,11 @@ project-root/
 │  │  ├─ SlowTask.{h,cpp} <- Trabajando
 │  │  └─ WebSocketTask.{h,cpp} <- Trabajando
 │  ├─ utils/
-│  │  ├─ RingBuffer.h
-│  │  ├─ Helpers.h
+│  │  ├─ RingBuffer.h <- Descartado
+│  │  ├─ Helpers.h <- Descartado
 │  │  └─ Logger.{h,cpp} <- Terminado
 │  ├─ views/    
 │  └─ init/
-│     ├─ Initializer.{h,cpp}       
+│     ├─ Initializer.{h,cpp} <- Descartado      
 └─ lib/
     └─ (opcional)
