@@ -35,7 +35,10 @@ char buffer[BUFFER_SIZE];
 void setup() {
   serialMgr.begin();  //Cambiar el nombre al metodo despues
   Logger::enable(true);
-  Logger::setTest(prefs.load<bool>(KEY_TEST, false));
+  bool test = prefs.load<bool>(KEY_TEST, false);
+  Logger::setTest(test);
+  Logger::log("Modo simulacion %s\n", (test ? "Habilitado" : "Deshabilitado")); 
+
 
   wifi.begin();
   sensorMgr.init();
@@ -54,7 +57,7 @@ void loop() {
   static uint32_t lastSendTime = 0;
   uint32_t now = micros();
 
-  if (now - lastSendTime >= 5000 && wsSrv.getConnectedClients() > 0) {
+  if (now - lastSendTime >= 4000 && wsSrv.getConnectedClients() > 0) {
     portENTER_CRITICAL(&appCtx.muxSensors);
     appCtx.copyValues(sensorData);
     appCtx.resetFlags();
