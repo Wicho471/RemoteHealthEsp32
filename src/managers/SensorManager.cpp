@@ -13,11 +13,37 @@ void SensorManager::init() {
     Wire.begin(SDA_PIN, SCL_PIN, 100000);
     Wire1.begin(SDA_1_PIN, SCL_1_PIN, 400000);
 
-    mlxOK = mlx.begin();
-    Logger::log(mlxOK ? "Encendiendo sensor MLX90614\n" : "Sensor MLX90614 no encontrado\n");
+    pinMode(SDA_PIN, INPUT_PULLUP);
+    pinMode(SCL_PIN, INPUT_PULLUP);
+    pinMode(SDA_1_PIN, INPUT_PULLUP);
+    pinMode(SCL_1_PIN, INPUT_PULLUP);
 
-    maxOK = max3010x.begin(Wire1);
-    Logger::log(maxOK ? "Encendiendo sensor MAX3010x\n" : "Sensor MAX3010x no encontrado\n");
+    Wire.setTimeout(10000); 
+    Wire1.setTimeout(10000);
+
+    // Bucle de inicialización para el sensor MLX90614
+    int attempts = 0;
+    while (!mlxOK && attempts < 10) {
+        mlxOK = mlx.begin();
+        if (!mlxOK) {
+            Logger::log("Intentando conectar con sensor MLX90614...\n");
+            delay(500);
+        }
+        attempts++;
+    }
+    Logger::log(mlxOK ? "Encendido sensor MLX90614\n" : "Sensor MLX90614 no encontrado despues de multiples intentos.\n");
+
+    // Bucle de inicialización para el sensor MAX3010x
+    attempts = 0;
+    while (!maxOK && attempts < 10) {
+        maxOK = max3010x.begin(Wire1);
+        if (!maxOK) {
+            Logger::log("Intentando conectar con sensor MAX3010x...\n");
+            delay(500);
+        }
+        attempts++;
+    }
+    Logger::log(maxOK ? "Encendido sensor MAX3010x\n" : "Sensor MAX3010x no encontrado despues de multiples intentos.\n");
 
     if (maxOK) {
         int brightness = prefs.load<int>(KEY_OXI_BRIGHTNESS, 0x4F);
@@ -33,12 +59,20 @@ void SensorManager::init() {
     }
     turnOffMax();
 
-    // <-- CAMBIO: Proceso de inicialización para el ADXL345
-    accelOK = accel.begin();
-    if (accelOK) {
-        accel.setRange(ADXL345_RANGE_2_G); // Se establece el rango a +/- 2G
+    // Bucle de inicialización para el sensor ADXL345
+    attempts = 0;
+    while (!accelOK && attempts < 10) {
+        accelOK = accel.begin();
+        if (!accelOK) {
+            Logger::log("Intentando conectar con sensor ADXL345...\n");
+            delay(500);
+        }
+        attempts++;
     }
-    Logger::log(accelOK ? "Encendiendo sensor ADXL345\n" : "Sensor ADXL345 no encontrado\n");
+    if (accelOK) {
+        accel.setRange(ADXL345_RANGE_2_G);
+    }
+    Logger::log(accelOK ? "Encendido sensor ADXL345\n" : "Sensor ADXL345 no encontrado despues de multiples intentos.\n");
 
     pinMode(LO_PLUS_PIN, INPUT);
     pinMode(LO_MINUS_PIN, INPUT);

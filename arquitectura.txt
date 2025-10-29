@@ -14,13 +14,14 @@ project-root/
 │  │  ├─ SensorManager.{h,cpp} <- Terminado
 │  │  ├─ CommandManager.{h,cpp} <- Terminado
 │  │  ├─ PreferencesManager.{h,cpp,tpp}  <- Terminado
+│  │  ├─ CertificateManager.{h,cpp} <- Terminado
 │  ├─ models/
 │  │  ├─ PulseValues.h <- Terminado
 │  │  ├─ SensorData.h <- Terminado               
 │  │  ├─ Commands.h <- Descartado   
 │  ├─ services/
-│  │  ├─ BluetoothService.{h,cpp} <- Terminado ("Descartado")
-│  │  ├─ WebServerService.{h,cpp} <- Terminado
+│  │  ├─ BluetoothService.{h,cpp} <- Terminado 
+│  │  ├─ WebServerService.{h,cpp} <- Terminado ("Descartado")
 │  │  ├─ WebSocketService.{h,cpp} <- Trabajando
 │  │  ├─ TimeService.{h,cpp} <- Terminado        
 │  ├─ tasks/

@@ -1,103 +1,97 @@
 #include "WebSocketService.h"
 
-WebSocketService::WebSocketService(CommandManager* cmdManager ,uint16_t port)
-    : wsServer(port), cmdManager(cmdManager), connectedClients(0), queueHandle(nullptr) {}
+WebSocketService::WebSocketService(CommandManager* cmdManager, uint16_t port) :
+    _port(port),
+    _cmdManager(cmdManager),
+    _isInitialized(false),
+    _server(nullptr),
+    _ws(nullptr),
+    _queueHandle(nullptr)
+{}
 
-void WebSocketService::begin() {
-    wsServer.begin();
-    wsServer.onEvent([this](uint8_t clientId, WStype_t type, uint8_t* payload, size_t length) {
-        onEventStatic(clientId, type, payload, length, this);
+WebSocketService::~WebSocketService() {
+    delete _ws;
+    delete _server;
+}
+
+bool WebSocketService::begin() {
+    if (!_certManager.initialize()) {
+        return false;
+    }
+
+    _server = new AsyncWebServer(_port, true, _certManager.getCert().c_str(), _certManager.getKey().c_str());
+    if(!_server) {
+        return false;
+    }
+    
+    _ws = new AsyncWebSocket("/ws");
+    if(!_ws) {
+        return false;
+    }
+
+    _ws->onEvent([this](AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+        this->onEvent(server, client, type, arg, data, len);
     });
 
-    queueHandle = xQueueCreate(QUEUE_SIZE, sizeof(char[PAYLOAD_MAX_SIZE]));
-    Logger::log(queueHandle == nullptr
-        ? "\n[WebSocket] No se pudo crear la cola de mensajes\n"
-        : "\n[WebSocket] Cola de mensajes creada\n");
-}
-
-void WebSocketService::keepAlive() {
-    wsServer.loop();
-}
-
-void WebSocketService::broadcast(String message) {
-    wsServer.broadcastTXT(message);
-}
-
-void WebSocketService::sendToClient(uint8_t clientId, String message) {
-    wsServer.sendTXT(clientId, message);
-}
-
-int WebSocketService::getConnectedClients() {
-    return wsServer.connectedClients();
-}
-
-QueueHandle_t WebSocketService::getQueueHandle() {
-    return queueHandle;
-}
-
-void WebSocketService::onEventStatic(uint8_t clientId, WStype_t type, uint8_t* payload, size_t length, void* arg) {
-    WebSocketService* self = reinterpret_cast<WebSocketService*>(arg);
-    if (self) {
-        self->onEvent(clientId, type, payload, length);
+    _server->addHandler(_ws);
+    
+    _queueHandle = xQueueCreate(QUEUE_SIZE, sizeof(WebSocketEventData));
+    if (_queueHandle == nullptr) {
+        return false;
     }
+
+    _server->begin();
+    
+    _isInitialized = true;
+    return true;
 }
 
-void WebSocketService::onEvent(uint8_t clientId, WStype_t type, uint8_t* payload, size_t length) {
+void WebSocketService::broadcast(const String& message) {
+    if (!_isInitialized) return;
+    _ws->textAll(message);
+}
+
+void WebSocketService::sendToClient(uint32_t clientId, const String& message) {
+    if (!_isInitialized) return;
+    _ws->text(clientId, message);
+}
+
+size_t WebSocketService::getConnectedClients() const {
+    if (!_isInitialized) return 0;
+    return _ws->count();
+}
+
+QueueHandle_t WebSocketService::getQueueHandle() const {
+    return _queueHandle;
+}
+
+void WebSocketService::onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
     switch (type) {
-        case WStype_CONNECTED:
-            if (connectedClients >= 3) {
-                Logger::log("[WebSocket] Cliente %u rechazado, máximo alcanzado\n", clientId);
-                sendToClient(clientId, "Numero maximo de clientes alcanzado, intente mas tarde.");
-                wsServer.disconnect(clientId);
+        case WS_EVT_CONNECT: {
+            if (_ws->count() >= MAX_WS_CLIENTS) {
+                client->close();
                 return;
-            }
-            connectedClients++;
-            Logger::log("[WebSocket] Cliente %u conectado\n", clientId);
-            break;
-
-        case WStype_DISCONNECTED:
-            connectedClients--;
-            if (connectedClients < 0) connectedClients = 0;
-            if (connectedClients == 0){
-                
-            }
-            Logger::log("[WebSocket] Cliente %u desconectado\n", clientId);
-            break;
-
-        case WStype_TEXT: {
-            String msg;
-            for (size_t i = 0; i < length; i++) {
-                msg += static_cast<char>(payload[i]);
-            }
-            Logger::log("[WebSocket] Mensaje recibido de [%u]: %s\n", clientId, msg.c_str());
-
-            if (msg.startsWith("ping")) {
-                sendToClient(clientId, "pong");
-            } else {
-                String response = cmdManager->processCommand(msg);
-                sendToClient(clientId, response);
             }
             break;
         }
-
-        case WStype_BIN:
-            Logger::log("[WebSocket] Mensaje binario de [%u], longitud: %u\n", clientId, length);
+        case WS_EVT_DISCONNECT:
             break;
+        case WS_EVT_DATA: {
+            AwsFrameInfo *info = (AwsFrameInfo*)arg;
+            if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+                WebSocketEventData eventData;
+                eventData.clientId = client->id();
 
-        case WStype_ERROR:
-            Logger::log("[WebSocket] Error de conexión con [%u]\n", clientId);
+                strncpy(eventData.payload, (const char*)data, PAYLOAD_MAX_SIZE);
+                eventData.payload[PAYLOAD_MAX_SIZE - 1] = '\0';
+
+                xQueueSend(_queueHandle, &eventData, pdMS_TO_TICKS(10));
+            }
             break;
-
-        case WStype_PING:
-            Logger::log("[WebSocket] PING recibido de [%u]\n", clientId);
+        }
+        case WS_EVT_ERROR:
             break;
-
-        case WStype_PONG:
-            Logger::log("[WebSocket] PONG recibido de [%u]\n", clientId);
-            break;
-
         default:
-            Logger::log("[WebSocket] Evento desconocido: %u\n", type);
             break;
     }
 }

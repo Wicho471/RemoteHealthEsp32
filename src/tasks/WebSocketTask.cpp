@@ -25,6 +25,6 @@ void WebSocketTask::run(void* parameter) {
         self->wsSrv.broadcast(msg);
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(1));
+    vTaskDelay(pdMS_TO_TICKS(2.5));
   }
 }
